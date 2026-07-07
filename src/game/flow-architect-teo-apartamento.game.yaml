@@ -38,6 +38,14 @@ world:
       scope: global
       type: boolean
       initial: false
+    - id: window_open
+      scope: global
+      type: boolean
+      initial: false
+    - id: scene_completed
+      scope: global
+      type: boolean
+      initial: false
   characters:
     - id: teo
       name: Teo
@@ -226,6 +234,9 @@ objects:
             operator: equals
             value: true
         effects:
+          - kind: set_state
+            target: window_open
+            value: true
           - kind: emit_companion_state
             target: basic_controller
             value:
