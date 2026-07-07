@@ -32,6 +32,7 @@ const player = game.world.characters.find((actor) => actor.id === "teo") ?? game
 const state = new Map<string, unknown>();
 const inventory = new Set<string>();
 const keys = new Set<string>();
+let sceneCompleted = false;
 
 for (const stateVariable of game.world.global_state ?? []) {
   state.set(stateVariable.id, stateVariable.initial);
@@ -170,10 +171,10 @@ function drawActor(actor: Actor) {
 }
 
 function interactWithObject(object: GameObject) {
-  const interaction = (object.interactions ?? []).find((candidate) => canRun(candidate.conditions ?? []));
+  const interaction = findBestInteraction(object);
 
   if (!interaction) {
-    setMessage(`${object.name}: nada acontece ainda.`);
+    setMessage(getBlockedMessage(object));
     return;
   }
 
@@ -191,6 +192,27 @@ function interactWithObject(object: GameObject) {
   }
 
   renderHudState();
+  checkSceneCompletion();
+}
+
+function findBestInteraction(object: GameObject) {
+  const interactions = object.interactions ?? [];
+  const available = interactions.filter((candidate) => canRun(candidate.conditions ?? []));
+
+  return available
+    .sort((left, right) => (right.conditions?.length ?? 0) - (left.conditions?.length ?? 0))[0];
+}
+
+function getBlockedMessage(object: GameObject) {
+  if (object.id === "sink" && !state.get("has_wrench")) {
+    return "Teo: preciso de alguma ferramenta antes de mexer nessa pia.";
+  }
+
+  if (object.id === "window" && !state.get("gas_smell_noticed")) {
+    return "Teo: a janela esta fechada, mas ainda nao tenho motivo para abrir.";
+  }
+
+  return `${object.name}: nada acontece ainda.`;
 }
 
 function canRun(conditions: Condition[]) {
@@ -232,8 +254,19 @@ function applyEffect(effect: Effect) {
   }
 
   if (effect.kind === "emit_companion_state") {
-    setMessage("Companion receberia novo estado: janela_aberta.");
+    setMessage("A janela foi aberta. O ar comeca a circular pela cozinha.");
     return;
+  }
+}
+
+function checkSceneCompletion() {
+  if (sceneCompleted) return;
+
+  if (state.get("sink_fixed") === true && state.get("window_open") === true) {
+    sceneCompleted = true;
+    state.set("scene_completed", true);
+    setMessage("Cena concluida: Teo consertou a pia e ventilou a cozinha.");
+    renderHudState();
   }
 }
 
