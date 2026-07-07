@@ -1,0 +1,322 @@
+id: flow_architect_teo_apartamento
+title: Flow Architect - Teo e o Apartamento Vivo
+pitch: >
+  Um adventure 2D curto sobre Teo, um garoto curioso que percebe que a pia,
+  o forno e a energia do apartamento estao ligados por um problema maior.
+
+game:
+  genre: 2d_adventure
+  perspective: side_view
+  art_style: clean_2d
+  default_resolution:
+    width: 1920
+    height: 1080
+  primary_target: web
+
+world:
+  summary: >
+    O apartamento de Teo parece comum, mas pequenos sinais mostram que os
+    sistemas de agua, energia e gas formam uma rede viva de causas e efeitos.
+  tone:
+    - curioso
+    - leve
+    - misterioso
+  themes:
+    - sistemas_conectados
+    - causa_e_efeito
+    - cuidado_com_a_casa
+  global_state:
+    - id: has_wrench
+      scope: global
+      type: boolean
+      initial: false
+    - id: sink_fixed
+      scope: global
+      type: boolean
+      initial: false
+    - id: gas_smell_noticed
+      scope: global
+      type: boolean
+      initial: false
+  characters:
+    - id: teo
+      name: Teo
+      role: player
+      description: Garoto curioso que tenta entender como as coisas funcionam.
+      default_room: apartment_kitchen_main
+      position:
+        x: 420
+        y: 760
+      motions:
+        - id: teo_idle
+          kind: idle
+          asset: teo_idle_spritesheet
+          speed: 0
+          loop: true
+        - id: teo_walk
+          kind: walk
+          asset: teo_walk_spritesheet
+          speed: 180
+          loop: true
+        - id: teo_use
+          kind: use
+          asset: teo_use_spritesheet
+          speed: 0
+          loop: false
+      inventory: []
+      state: []
+
+scenes:
+  - id: apartment_kitchen_scene
+    title: Cozinha do Apartamento
+    type: playable
+    description: >
+      Primeira cena jogavel. Teo entra na cozinha, percebe a pia pingando e
+      encontra pistas de que agua, energia e gas estao se afetando.
+    rooms:
+      - id: apartment_kitchen_main
+        title: Cozinha Principal
+        size:
+          width: 1920
+          height: 1080
+        camera:
+          mode: fixed
+          target_actor: teo
+        walkable_areas:
+          - id: kitchen_floor
+            shape: polygon
+            points:
+              - x: 220
+                y: 850
+              - x: 1680
+                y: 850
+              - x: 1600
+                y: 980
+              - x: 280
+                y: 980
+        layers:
+          - id: kitchen_background
+            kind: background
+            z_index: 0
+            asset: kitchen_background_image
+            visible: true
+          - id: kitchen_objects
+            kind: objects
+            z_index: 10
+            visible: true
+          - id: kitchen_actors
+            kind: actors
+            z_index: 20
+            visible: true
+          - id: kitchen_foreground
+            kind: foreground
+            z_index: 30
+            asset: kitchen_foreground_blur
+            visible: true
+          - id: kitchen_ui
+            kind: ui
+            z_index: 100
+            visible: true
+    actors:
+      - teo
+    objects:
+      - sink
+      - oven
+      - window
+      - wrench
+    dialogues:
+      - sink_first_look
+      - oven_warning
+    events:
+      - id: scene_intro
+        trigger: scene_enter
+        conditions: []
+        effects:
+          - kind: start_dialogue
+            target: sink_first_look
+            value:
+              node: intro
+    entry_event: scene_intro
+    companion_view: basic_controller
+
+objects:
+  - id: sink
+    name: Pia
+    kind: device
+    description: Pia antiga pingando sem parar.
+    room: apartment_kitchen_main
+    position:
+      x: 760
+      y: 690
+    asset: sink_image
+    interactions:
+      - id: look_sink
+        verb: look
+        label: Olhar pia
+        conditions: []
+        effects:
+          - kind: start_dialogue
+            target: sink_first_look
+            value:
+              node: intro
+      - id: use_wrench_on_sink
+        verb: use
+        label: Usar chave inglesa
+        conditions:
+          - state: has_wrench
+            operator: equals
+            value: true
+        effects:
+          - kind: play_motion
+            target: teo
+            value:
+              motion: teo_use
+          - kind: set_state
+            target: sink_fixed
+            value: true
+          - kind: play_sound
+            target: sink_repaired_sound
+            value: once
+        fallback_dialogue: sink_first_look
+    state:
+      - id: sink_is_leaking
+        scope: object
+        type: boolean
+        initial: true
+
+  - id: oven
+    name: Forno
+    kind: device
+    description: Forno desligado, mas com um cheiro estranho perto dele.
+    room: apartment_kitchen_main
+    position:
+      x: 1180
+      y: 710
+    asset: oven_image
+    interactions:
+      - id: look_oven
+        verb: look
+        label: Olhar forno
+        conditions: []
+        effects:
+          - kind: set_state
+            target: gas_smell_noticed
+            value: true
+          - kind: start_dialogue
+            target: oven_warning
+            value:
+              node: gas_smell
+    state: []
+
+  - id: window
+    name: Janela
+    kind: hotspot
+    description: Janela com vista para o predio vizinho.
+    room: apartment_kitchen_main
+    position:
+      x: 1460
+      y: 430
+    asset: window_image
+    interactions:
+      - id: open_window
+        verb: open
+        label: Abrir janela
+        conditions:
+          - state: gas_smell_noticed
+            operator: equals
+            value: true
+        effects:
+          - kind: emit_companion_state
+            target: basic_controller
+            value:
+              status: janela_aberta
+    state: []
+
+  - id: wrench
+    name: Chave inglesa
+    kind: item
+    description: Ferramenta pequena esquecida perto do armario.
+    room: apartment_kitchen_main
+    position:
+      x: 520
+      y: 780
+    asset: wrench_image
+    interactions:
+      - id: take_wrench
+        verb: take
+        label: Pegar chave inglesa
+        conditions: []
+        effects:
+          - kind: set_state
+            target: has_wrench
+            value: true
+          - kind: add_inventory
+            target: teo
+            value: wrench
+    state: []
+
+dialogues:
+  - id: sink_first_look
+    participants:
+      - teo
+    nodes:
+      - id: intro
+        speaker: teo
+        text: "Essa pia esta pingando... mas o som parece vir da parede tambem."
+        choices:
+          - label: "Procurar uma ferramenta"
+            conditions: []
+            effects: []
+            next: find_tool_hint
+        next: find_tool_hint
+      - id: find_tool_hint
+        speaker: teo
+        text: "Talvez tenha algo perto do armario."
+        choices: []
+
+  - id: oven_warning
+    participants:
+      - teo
+    nodes:
+      - id: gas_smell
+        speaker: teo
+        text: "Melhor abrir uma janela. Isso nao parece normal."
+        choices: []
+
+assets:
+  - id: kitchen_background_image
+    type: image
+    path: assets/scenes/apartment_kitchen/background.png
+    source: manual_upload
+  - id: kitchen_foreground_blur
+    type: image
+    path: assets/scenes/apartment_kitchen/foreground-blur.png
+    source: manual_upload
+  - id: teo_idle_spritesheet
+    type: spritesheet
+    path: assets/actors/teo/idle.png
+    source: aseprite
+  - id: teo_walk_spritesheet
+    type: spritesheet
+    path: assets/actors/teo/walk.png
+    source: aseprite
+  - id: teo_use_spritesheet
+    type: spritesheet
+    path: assets/actors/teo/use.png
+    source: aseprite
+  - id: sink_image
+    type: image
+    path: assets/objects/sink.png
+    source: manual_upload
+  - id: oven_image
+    type: image
+    path: assets/objects/oven.png
+    source: manual_upload
+  - id: window_image
+    type: image
+    path: assets/objects/window.png
+    source: manual_upload
+  - id: wrench_image
+    type: image
+    path: assets/objects/wrench.png
+    source: manual_upload
