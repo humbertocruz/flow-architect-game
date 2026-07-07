@@ -187,6 +187,7 @@ function interactWithObject(object: GameObject) {
     applyEffect(effect);
   }
 
+  applyInteractionMessage(interaction.id);
   if ((interaction.effects ?? []).length === 0 && interaction.fallback_dialogue) {
     startDialogue(interaction.fallback_dialogue);
   }
@@ -213,6 +214,20 @@ function getBlockedMessage(object: GameObject) {
   }
 
   return `${object.name}: nada acontece ainda.`;
+}
+
+function applyInteractionMessage(interactionId: string) {
+  if (interactionId === "take_wrench") {
+    setMessage("Teo pegou a chave inglesa. Agora da para tentar consertar a pia.");
+  }
+
+  if (interactionId === "use_wrench_on_sink") {
+    setMessage("Teo apertou a conexao solta. A pia parou de pingar.");
+  }
+
+  if (interactionId === "open_window") {
+    setMessage("A janela foi aberta. O ar comeca a circular pela cozinha.");
+  }
 }
 
 function canRun(conditions: Condition[]) {
@@ -254,7 +269,6 @@ function applyEffect(effect: Effect) {
   }
 
   if (effect.kind === "emit_companion_state") {
-    setMessage("A janela foi aberta. O ar comeca a circular pela cozinha.");
     return;
   }
 }
