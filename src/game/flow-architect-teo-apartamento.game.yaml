@@ -135,6 +135,7 @@ scenes:
     dialogues:
       - sink_first_look
       - oven_warning
+      - window_hint
     events:
       - id: scene_intro
         trigger: scene_enter
@@ -158,15 +159,6 @@ objects:
       y: 690
     asset: sink_image
     interactions:
-      - id: look_sink
-        verb: look
-        label: Olhar pia
-        conditions: []
-        effects:
-          - kind: start_dialogue
-            target: sink_first_look
-            value:
-              node: intro
       - id: use_wrench_on_sink
         verb: use
         label: Usar chave inglesa
@@ -186,6 +178,18 @@ objects:
             target: sink_repaired_sound
             value: once
         fallback_dialogue: sink_first_look
+      - id: look_sink
+        verb: look
+        label: Olhar pia
+        conditions:
+          - state: has_wrench
+            operator: equals
+            value: false
+        effects:
+          - kind: start_dialogue
+            target: sink_first_look
+            value:
+              node: intro
     state:
       - id: sink_is_leaking
         scope: object
@@ -241,6 +245,18 @@ objects:
             target: basic_controller
             value:
               status: janela_aberta
+      - id: look_window
+        verb: look
+        label: Olhar janela
+        conditions:
+          - state: gas_smell_noticed
+            operator: equals
+            value: false
+        effects:
+          - kind: start_dialogue
+            target: window_hint
+            value:
+              node: closed_window
     state: []
 
   - id: wrench
@@ -292,6 +308,15 @@ dialogues:
       - id: gas_smell
         speaker: teo
         text: "Melhor abrir uma janela. Isso nao parece normal."
+        choices: []
+
+  - id: window_hint
+    participants:
+      - teo
+    nodes:
+      - id: closed_window
+        speaker: teo
+        text: "A janela esta fechada. Por enquanto tudo bem."
         choices: []
 
 assets:
